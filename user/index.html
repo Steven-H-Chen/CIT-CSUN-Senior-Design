@@ -1,81 +1,84 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive Map with Editable Pins</title>
-
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-
-    <!-- Bootstrap CSS (For modal styling) -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="css/styles.css">
+  <meta charset="utf-8">
+  <title>Interactive Map with Editable Pins</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+    /* Globe fills the background */
+    #earth_div {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+    }
+    /* Offcanvas toggle button styling */
+    #offcanvasToggle {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 20;
+    }
+  </style>
 </head>
 <body>
-    <div id="map-container">
-        <h1>Spot On</h1>
-        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-            <div class="container-fluid">
-                <a class="navbar-brand" href="index.html">Spot On</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="collapse navbar-collapse" id="navbarNav">
-                    <ul class="navbar-nav">
-                        <li class="nav-item"><a class="nav-link" href="index.html">Home</a></li>
-                        <li class="nav-item"><a class="nav-link active" href="pins.html">Pins</a></li>
-                        <li class="nav-item"><a class="nav-link" href="songs.html">Songs</a></li>
-                        <li class="nav-item"><a class="nav-link" href="items.html">Items</a></li>
-                        <li class="nav-item"><a class="nav-link" href="events.html">Events</a></li>
-                    </ul>
-                </div>
-            </div>
-        </nav>
-        <p>Lets pin it</p>
-        <div id="map"></div>
-    </div>
+  <!-- Globe Background -->
+  <div id="earth_div"></div>
 
-    <!-- Modal for Adding/Editing Pins -->
-    <div class="modal fade" id="pinModal" tabindex="-1" aria-labelledby="pinModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="pinModalLabel">Pin Details</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="pinForm">
-                        <div class="mb-3">
-                            <label for="pinTitle" class="form-label">Title</label>
-                            <input type="text" class="form-control" id="pinTitle" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="pinDescription" class="form-label">Description</label>
-                            <textarea class="form-control" id="pinDescription" rows="3" required></textarea>
-                        </div>
-                        <div class="mb-3">
-                            <label for="pinSong" class="form-label">Song Link (Optional)</label>
-                            <input type="url" class="form-control" id="pinSong" placeholder="https://example.com">
-                        </div>
-                        <input type="hidden" id="pinLat">
-                        <input type="hidden" id="pinLng">
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" id="savePinBtn" class="btn btn-primary">Save Pin</button>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <!-- Bootstrap JS -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
-    <!-- Custom JS -->
-    <script src="js/map.js"></script>
+  <!-- Offcanvas Toggle Button (Hamburger Icon) -->
+  <button class="btn btn-primary" type="button" id="offcanvasToggle" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar">
+    <span class="navbar-toggler-icon"></span>
+  </button>
 
+  <!-- Offcanvas Sidebar for Navigation -->
+  <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
+    <div class="offcanvas-header">
+      <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Spot On</h5>
+      <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+      <nav class="navbar">
+        <ul class="navbar-nav">
+          <li class="nav-item"><a class="nav-link" href="index.html">Home</a></li>
+          <li class="nav-item"><a class="nav-link active" href="pins.html">Pins</a></li>
+          <li class="nav-item"><a class="nav-link" href="songs.html">Songs</a></li>
+          <li class="nav-item"><a class="nav-link" href="items.html">Items</a></li>
+          <li class="nav-item"><a class="nav-link" href="events.html">Events</a></li>
+        </ul>
+      </nav>
+      <p>Create an account or login to start your journey</p>
+    </div>
+  </div>
+
+  <!-- Load WebGL Earth API -->
+  <script src="https://www.webglearth.com/v2/api.js"></script>
+  <!-- Bootstrap JS Bundle (includes Popper) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // Create the globe in the 'earth_div' element
+    var earth = new WE.map('earth_div');
+    // Set initial view with [latitude, longitude] and a zoom level
+    earth.setView([0, 0], 2);
+
+    // Add a tile layer using OpenStreetMap tiles
+    WE.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors',
+      subdomains: 'abc'
+    }).addTo(earth);
+
+    // Optionally, add a marker to test interactivity
+    var marker = WE.marker([0, 0]).addTo(earth);
+    marker.bindPopup("Hello, World!").openPopup();
+  </script>
 </body>
 </html>

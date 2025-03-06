@@ -20,17 +20,9 @@ function authenticateUser(email, password) {
     };
 
     if (email === tempUser.email && password === tempUser.password) {
-        alert("Login successful! Redirecting...");
-
-        // Debugging log to see if this runs
-        console.log("Redirecting to dashboard.html");
-
-        // Ensure this runs after the alert
-        setTimeout(() => {
-            window.location.assign("dashboard.html"); // Alternative to location.href
-        }, 1000); // Delay to allow alert display
-
-    } else {
+        window.location.href = "../index.html";
+    } 
+    else {
         document.getElementById("error-message").textContent = "Invalid email or password.";
     }
 }
