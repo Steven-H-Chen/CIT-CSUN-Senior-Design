@@ -13,6 +13,16 @@
       height: 100%;
       overflow: hidden;
     }
+
+    #bgvideo {
+      position: fixed;
+      top: 0;
+      left: 0;
+      min-width: 100%;
+      min-height: 100%;
+      z-index: -2;
+      object-fit: cover;
+    }
     /* Globe fills the background */
     #earth_div {
       position: fixed;
@@ -22,7 +32,7 @@
       height: 100%;
       z-index: 0;
     }
-    /* Offcanvas toggle button styling */
+    /* Offcanvas toggle button */
     #offcanvasToggle {
       position: fixed;
       top: 20px;
@@ -32,6 +42,10 @@
   </style>
 </head>
 <body>
+  <!-- Video Background (local file) -->
+  <video autoplay muted loop id="bgvideo">
+    <source src="stars.mp4" type="video/mp4">
+  </video>
   <!-- Globe Background -->
   <div id="earth_div"></div>
 
@@ -40,23 +54,85 @@
     <span class="navbar-toggler-icon"></span>
   </button>
 
-  <!-- Offcanvas Sidebar for Navigation -->
+  <!-- Offcanvas Sidebar for Navigation, Search, and Manual Pin Addition -->
   <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
     <div class="offcanvas-header">
       <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Spot On</h5>
       <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
     </div>
     <div class="offcanvas-body">
-      <nav class="navbar">
+      <!-- Navigation -->
+      <nav class="navbar mb-4">
         <ul class="navbar-nav">
           <li class="nav-item"><a class="nav-link" href="index.html">Home</a></li>
           <li class="nav-item"><a class="nav-link active" href="pins.html">Pins</a></li>
           <li class="nav-item"><a class="nav-link" href="songs.html">Songs</a></li>
           <li class="nav-item"><a class="nav-link" href="items.html">Items</a></li>
           <li class="nav-item"><a class="nav-link" href="events.html">Events</a></li>
+          <li class="nav-item"><a class="nav-link" href="user/userlogin.html">User</a></li>
+          <li class="nav-item"><a class="nav-link" href="register.php">Register</a></li>
         </ul>
       </nav>
       <p>Create an account or login to start your journey</p>
+
+      <!-- Search Pins Section -->
+      <div class="mb-4">
+        <h6>Search Pins</h6>
+        <form id="searchForm">
+          <div class="mb-3">
+            <input type="text" class="form-control" id="searchInput" placeholder="Search by description">
+          </div>
+          <button type="submit" class="btn btn-primary">Search</button>
+        </form>
+        <div id="searchResults" class="mt-3"></div>
+      </div>
+
+      <!-- Manual Add Pin Form -->
+      <h6>Add a New Pin</h6>
+      <form id="pinForm">
+        <div class="mb-3">
+          <label for="latitude" class="form-label">Latitude</label>
+          <input type="number" step="any" class="form-control" id="latitude" placeholder="e.g., 37.7749" required>
+        </div>
+        <div class="mb-3">
+          <label for="longitude" class="form-label">Longitude</label>
+          <input type="number" step="any" class="form-control" id="longitude" placeholder="e.g., -122.4194" required>
+        </div>
+        <div class="mb-3">
+          <label for="description" class="form-label">Description</label>
+          <input type="text" class="form-control" id="description" placeholder="Pin description" required>
+        </div>
+        <button type="submit" class="btn btn-success">Add Pin</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal for Adding a Pin by Clicking on the Map -->
+  <div class="modal fade" id="pinModal" tabindex="-1" aria-labelledby="pinModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="pinModalLabel">Add Pin</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="modalPinForm">
+            <div class="mb-3">
+              <label for="modalLatitude" class="form-label">Latitude</label>
+              <input type="number" step="any" class="form-control" id="modalLatitude" readonly>
+            </div>
+            <div class="mb-3">
+              <label for="modalLongitude" class="form-label">Longitude</label>
+              <input type="number" step="any" class="form-control" id="modalLongitude" readonly>
+            </div>
+            <div class="mb-3">
+              <label for="modalDescription" class="form-label">Description</label>
+              <input type="text" class="form-control" id="modalDescription" required>
+            </div>
+            <button type="submit" class="btn btn-success">Add Pin</button>
+          </form>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -65,20 +141,102 @@
   <!-- Bootstrap JS Bundle (includes Popper) -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    // Create the globe in the 'earth_div' element
+    // Initialize the globe
     var earth = new WE.map('earth_div');
-    // Set initial view with [latitude, longitude] and a zoom level
     earth.setView([0, 0], 2);
-
-    // Add a tile layer using OpenStreetMap tiles
     WE.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors',
       subdomains: 'abc'
     }).addTo(earth);
 
-    // Optionally, add a marker to test interactivity
-    var marker = WE.marker([0, 0]).addTo(earth);
-    marker.bindPopup("Hello, World!").openPopup();
+    // Functions to add and persist pins
+    function addPin(lat, lng, description) {
+      var marker = WE.marker([lat, lng]).addTo(earth);
+      marker.bindPopup(description);
+    }
+
+    function savePin(lat, lng, description) {
+      var pins = JSON.parse(localStorage.getItem('pins')) || [];
+      pins.push({ lat: lat, lng: lng, description: description });
+      localStorage.setItem('pins', JSON.stringify(pins));
+    }
+
+    function loadPins() {
+      var pins = JSON.parse(localStorage.getItem('pins')) || [];
+      pins.forEach(function(pin) {
+        addPin(pin.lat, pin.lng, pin.description);
+      });
+    }
+
+    // Load saved pins on page load
+    loadPins();
+
+    // Handle manual add pin form submission (from sidebar)
+    document.getElementById('pinForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      var lat = parseFloat(document.getElementById('latitude').value);
+      var lng = parseFloat(document.getElementById('longitude').value);
+      var description = document.getElementById('description').value;
+      addPin(lat, lng, description);
+      savePin(lat, lng, description);
+      e.target.reset();
+    });
+
+    // Handle modal pin form submission (from map click)
+    document.getElementById('modalPinForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      var lat = parseFloat(document.getElementById('modalLatitude').value);
+      var lng = parseFloat(document.getElementById('modalLongitude').value);
+      var description = document.getElementById('modalDescription').value;
+      addPin(lat, lng, description);
+      savePin(lat, lng, description);
+      // Hide the modal after submission
+      var modalEl = document.getElementById('pinModal');
+      var modal = bootstrap.Modal.getInstance(modalEl);
+      modal.hide();
+      e.target.reset();
+    });
+
+    // Add search functionality for pins
+    document.getElementById('searchForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      var query = document.getElementById('searchInput').value.toLowerCase();
+      var pins = JSON.parse(localStorage.getItem('pins')) || [];
+      var resultsDiv = document.getElementById('searchResults');
+      resultsDiv.innerHTML = '';
+      var results = pins.filter(function(pin) {
+        return pin.description.toLowerCase().includes(query);
+      });
+      if (results.length === 0) {
+        resultsDiv.innerHTML = '<p>No matching pins found.</p>';
+      } else {
+        var ul = document.createElement('ul');
+        ul.classList.add('list-group');
+        results.forEach(function(pin) {
+          var li = document.createElement('li');
+          li.classList.add('list-group-item');
+          li.style.cursor = 'pointer';
+          li.textContent = pin.description + ' (' + pin.lat + ', ' + pin.lng + ')';
+          li.addEventListener('click', function() {
+            earth.setView([pin.lat, pin.lng], 4);
+          });
+          ul.appendChild(li);
+        });
+        resultsDiv.appendChild(ul);
+      }
+    });
+
+    // Enable map click to invoke modal for adding a pin
+    // WebGL Earth supports event handling via the map instance.
+    earth.on('click', function(event) {
+      if (event && event.latlng) {
+        document.getElementById('modalLatitude').value = event.latlng.lat;
+        document.getElementById('modalLongitude').value = event.latlng.lng;
+        // Show the modal
+        var pinModal = new bootstrap.Modal(document.getElementById('pinModal'));
+        pinModal.show();
+      }
+    });
   </script>
 </body>
 </html>
