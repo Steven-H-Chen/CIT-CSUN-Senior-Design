@@ -13,6 +13,15 @@
       height: 100%;
       overflow: hidden;
     }
+    #bgvideo {
+      position: fixed;
+      top: 0;
+      left: 0;
+      min-width: 100%;
+      min-height: 100%;
+      z-index: -2;
+      object-fit: cover;
+    }
     /* Globe fills the background */
     #earth_div {
       position: fixed;
@@ -32,6 +41,10 @@
   </style>
 </head>
 <body>
+  <!-- Video Background (local file) -->
+  <video autoplay muted loop id="bgvideo">
+    <source src="stars.mp4" type="video/mp4">
+  </video>
   <!-- Globe Background -->
   <div id="earth_div"></div>
 
