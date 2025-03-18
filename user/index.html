@@ -13,7 +13,6 @@
       height: 100%;
       overflow: hidden;
     }
-
     #bgvideo {
       position: fixed;
       top: 0;
@@ -71,7 +70,6 @@
           <li class="nav-item"><a class="nav-link" href="events.html">Events</a></li>
         </ul>
       </nav>
-      <p>Create an account or login to start your journey</p>
 
       <!-- Search Pins Section -->
       <div class="mb-4">
@@ -105,16 +103,33 @@
     </div>
   </div>
 
-  <!-- Modal for Adding a Pin by Clicking on the Map -->
+  <!-- Merged Modal for Adding/Editing Pins -->
   <div class="modal fade" id="pinModal" tabindex="-1" aria-labelledby="pinModalLabel" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="pinModalLabel">Add Pin</h5>
+          <h5 class="modal-title" id="pinModalLabel">Pin Details</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
+          <!-- Using the same form id to preserve existing JS integration -->
           <form id="modalPinForm">
+            <!-- New Title Field -->
+            <div class="mb-3">
+              <label for="pinTitle" class="form-label">Title</label>
+              <input type="text" class="form-control" id="pinTitle" required>
+            </div>
+            <!-- Updated Description Field as Textarea -->
+            <div class="mb-3">
+              <label for="pinDescription" class="form-label">Description</label>
+              <textarea class="form-control" id="pinDescription" rows="3" required></textarea>
+            </div>
+            <!-- New Song Link Field -->
+            <div class="mb-3">
+              <label for="pinSong" class="form-label">Song Link (Optional)</label>
+              <input type="url" class="form-control" id="pinSong" placeholder="https://example.com">
+            </div>
+            <!-- Latitude and Longitude Fields (Readonly) -->
             <div class="mb-3">
               <label for="modalLatitude" class="form-label">Latitude</label>
               <input type="number" step="any" class="form-control" id="modalLatitude" readonly>
@@ -123,12 +138,11 @@
               <label for="modalLongitude" class="form-label">Longitude</label>
               <input type="number" step="any" class="form-control" id="modalLongitude" readonly>
             </div>
-            <div class="mb-3">
-              <label for="modalDescription" class="form-label">Description</label>
-              <input type="text" class="form-control" id="modalDescription" required>
-            </div>
-            <button type="submit" class="btn btn-success">Add Pin</button>
           </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" id="savePinBtn" class="btn btn-primary">Save Pin</button>
         </div>
       </div>
     </div>
@@ -147,47 +161,57 @@
       subdomains: 'abc'
     }).addTo(earth);
 
-    // Functions to add and persist pins
-    function addPin(lat, lng, description) {
+    // Updated functions to handle extended pin data (title, description, song)
+    function addPin(lat, lng, title, description, song) {
       var marker = WE.marker([lat, lng]).addTo(earth);
-      marker.bindPopup(description);
+      var popupContent = "<strong>" + title + "</strong><br>" + description;
+      if (song) {
+        popupContent += "<br><a href='" + song + "' target='_blank'>Song Link</a>";
+      }
+      marker.bindPopup(popupContent);
     }
 
-    function savePin(lat, lng, description) {
+    function savePin(lat, lng, title, description, song) {
       var pins = JSON.parse(localStorage.getItem('pins')) || [];
-      pins.push({ lat: lat, lng: lng, description: description });
+      pins.push({ lat: lat, lng: lng, title: title, description: description, song: song });
       localStorage.setItem('pins', JSON.stringify(pins));
     }
 
     function loadPins() {
       var pins = JSON.parse(localStorage.getItem('pins')) || [];
       pins.forEach(function(pin) {
-        addPin(pin.lat, pin.lng, pin.description);
+        var title = pin.title || "Untitled";
+        addPin(pin.lat, pin.lng, title, pin.description, pin.song);
       });
     }
 
     // Load saved pins on page load
     loadPins();
 
-    // Handle manual add pin form submission (from sidebar)
+    // Handle manual add pin form submission (from sidebar) – remains unchanged
     document.getElementById('pinForm').addEventListener('submit', function(e) {
       e.preventDefault();
       var lat = parseFloat(document.getElementById('latitude').value);
       var lng = parseFloat(document.getElementById('longitude').value);
       var description = document.getElementById('description').value;
-      addPin(lat, lng, description);
-      savePin(lat, lng, description);
+      // For manual add, set title as 'Untitled' and no song link
+      addPin(lat, lng, "Untitled", description, "");
+      var pins = JSON.parse(localStorage.getItem('pins')) || [];
+      pins.push({ lat: lat, lng: lng, title: "Untitled", description: description, song: "" });
+      localStorage.setItem('pins', JSON.stringify(pins));
       e.target.reset();
     });
 
-    // Handle modal pin form submission (from map click)
+    // Handle modal pin form submission (from map click) with extended fields
     document.getElementById('modalPinForm').addEventListener('submit', function(e) {
       e.preventDefault();
       var lat = parseFloat(document.getElementById('modalLatitude').value);
       var lng = parseFloat(document.getElementById('modalLongitude').value);
-      var description = document.getElementById('modalDescription').value;
-      addPin(lat, lng, description);
-      savePin(lat, lng, description);
+      var title = document.getElementById('pinTitle').value;
+      var description = document.getElementById('pinDescription').value;
+      var song = document.getElementById('pinSong').value;
+      addPin(lat, lng, title, description, song);
+      savePin(lat, lng, title, description, song);
       // Hide the modal after submission
       var modalEl = document.getElementById('pinModal');
       var modal = bootstrap.Modal.getInstance(modalEl);
@@ -195,7 +219,12 @@
       e.target.reset();
     });
 
-    // Add search functionality for pins
+    // Bind click event to save button in modal as well
+    document.getElementById('savePinBtn').addEventListener('click', function() {
+      document.getElementById('modalPinForm').dispatchEvent(new Event('submit', {cancelable: true}));
+    });
+
+    // Add search functionality for pins (searching in title and description)
     document.getElementById('searchForm').addEventListener('submit', function(e) {
       e.preventDefault();
       var query = document.getElementById('searchInput').value.toLowerCase();
@@ -203,7 +232,8 @@
       var resultsDiv = document.getElementById('searchResults');
       resultsDiv.innerHTML = '';
       var results = pins.filter(function(pin) {
-        return pin.description.toLowerCase().includes(query);
+        return (pin.description && pin.description.toLowerCase().includes(query)) ||
+               (pin.title && pin.title.toLowerCase().includes(query));
       });
       if (results.length === 0) {
         resultsDiv.innerHTML = '<p>No matching pins found.</p>';
@@ -214,7 +244,7 @@
           var li = document.createElement('li');
           li.classList.add('list-group-item');
           li.style.cursor = 'pointer';
-          li.textContent = pin.description + ' (' + pin.lat + ', ' + pin.lng + ')';
+          li.textContent = (pin.title || "Untitled") + ' - ' + pin.description + ' (' + pin.lat + ', ' + pin.lng + ')';
           li.addEventListener('click', function() {
             earth.setView([pin.lat, pin.lng], 4);
           });
@@ -224,12 +254,15 @@
       }
     });
 
-    // Enable map click to invoke modal for adding a pin
-    // WebGL Earth supports event handling via the map instance.
+    // Enable map click to invoke modal for adding a pin with extended fields
     earth.on('click', function(event) {
       if (event && event.latlng) {
         document.getElementById('modalLatitude').value = event.latlng.lat;
         document.getElementById('modalLongitude').value = event.latlng.lng;
+        // Reset additional fields in the modal
+        document.getElementById('pinTitle').value = "";
+        document.getElementById('pinDescription').value = "";
+        document.getElementById('pinSong').value = "";
         // Show the modal
         var pinModal = new bootstrap.Modal(document.getElementById('pinModal'));
         pinModal.show();
